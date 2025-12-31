@@ -1,0 +1,842 @@
+<Window x:Class="WiFiHealthMonitor.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:controls="clr-namespace:WiFiHealthMonitor.Controls"
+        mc:Ignorable="d"
+        Title="WiFi Health Monitor"
+        Height="800" Width="1400"
+        MinHeight="600" MinWidth="1000"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource BackgroundBrush}"
+        ResizeMode="CanResize"
+        WindowState="Normal">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Resources/ModernStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="280"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ===== LEFT SIDEBAR ===== -->
+        <Border Grid.Column="0" Background="White"
+                BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,0,1,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Logo & Brand -->
+                    <StackPanel Grid.Row="0" Margin="24,20,24,20">
+                        <Ellipse Width="56" Height="56" Fill="{StaticResource PrimaryBrush}" Margin="0,0,0,12"/>
+                        <TextBlock Text="WiFi Health" Style="{StaticResource H3Text}" TextAlignment="Center"/>
+                        <TextBlock Text="Monitor" Style="{StaticResource SecondaryText}" TextAlignment="Center" FontWeight="SemiBold"/>
+                    </StackPanel>
+
+                    <!-- Navigation -->
+                    <StackPanel Grid.Row="1" Margin="16,0">
+                        <RadioButton x:Name="NavOverview" Content="📊  Overview" Style="{StaticResource NavButton}" IsChecked="True" Checked="Navigation_Changed"/>
+                        <RadioButton x:Name="NavAnalytics" Content="📈  Analytics" Style="{StaticResource NavButton}" Checked="Navigation_Changed"/>
+                        <RadioButton x:Name="NavDevices" Content="💻  Devices" Style="{StaticResource NavButton}" Checked="Navigation_Changed"/>
+                        <RadioButton x:Name="NavPredictions" Content="🔮  Predictions" Style="{StaticResource NavButton}" Checked="Navigation_Changed"/>
+
+                        <Rectangle Height="1" Fill="{StaticResource DividerBrush}" Margin="0,16"/>
+
+                        <TextBlock Text="QUICK ACTIONS" Style="{StaticResource CaptionText}" Margin="16,16,0,12"/>
+                        <Button x:Name="RunSpeedTestButton" Content="⚡  Speed Test" Style="{StaticResource ModernButton}" Margin="0,4" Click="RunSpeedTestButton_Click"/>
+                        <Button x:Name="RefreshButton" Content="🔄  Refresh Data" Style="{StaticResource SecondaryButton}" Margin="0,4" Click="RefreshButton_Click"/>
+                    </StackPanel>
+
+                    <!-- Status Footer -->
+                    <Border Grid.Row="2" Background="{StaticResource SurfaceHoverBrush}" Padding="16,12">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CaptionText}" Text="STATUS"/>
+                            <TextBlock x:Name="LastUpdateText" Text="Last updated: --" Style="{StaticResource SecondaryText}" Margin="0,6,0,2"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <Ellipse Width="8" Height="8" Fill="{StaticResource AccentBrush}" Margin="0,0,8,0"/>
+                                <TextBlock Text="Monitoring Active" Style="{StaticResource SecondaryText}" FontSize="11"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- ===== MAIN CONTENT AREA ===== -->
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Top Bar -->
+                <Border Grid.Row="0" Background="White" Padding="24,16" BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,0,0,1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock x:Name="PageTitle" Text="Overview" Style="{StaticResource H1Text}"/>
+                            <TextBlock x:Name="PageSubtitle" Text="Real-time network monitoring and health insights" Style="{StaticResource SecondaryText}" Margin="0,4,0,0"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Background="{StaticResource SurfaceHoverBrush}" CornerRadius="8" Padding="12,8">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="💻" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock x:Name="DeviceCountText" Text="Devices: --" Style="{StaticResource BodyText}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Content Container with smooth transitions -->
+                <Grid Grid.Row="1" x:Name="ContentContainer">
+
+                    <!-- OVERVIEW PAGE -->
+                    <ScrollViewer x:Name="OverviewPage" VerticalScrollBarVisibility="Auto" Visibility="Visible">
+                        <StackPanel Margin="24,20,24,24">
+
+                            <!-- Hero Metrics -->
+                            <Grid Margin="0,0,0,24">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Signal Strength Card -->
+                                <Border Grid.Column="0" Style="{StaticResource MetricCard}" Margin="0,0,16,0">
+                                    <StackPanel>
+                                        <TextBlock Text="SIGNAL STRENGTH" Style="{StaticResource CaptionText}"/>
+                                        <TextBlock x:Name="SignalText" Text="--%" Style="{StaticResource HeroText}" Margin="0,12,0,8"/>
+                                        <TextBlock x:Name="SignalStatusText" Text="--" Style="{StaticResource SecondaryText}"/>
+                                        <Border Height="4" Background="{StaticResource AccentBrush}" CornerRadius="2" Margin="0,16,0,0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- WiFi Link Speed Card -->
+                                <Border Grid.Column="1" Style="{StaticResource MetricCard}" Margin="0,0,16,0">
+                                    <StackPanel>
+                                        <TextBlock Text="WiFi CONNECTION" Style="{StaticResource CaptionText}"/>
+                                        <TextBlock x:Name="DownloadSpeedText" Text="-- Mbps" Style="{StaticResource HeroText}" Margin="0,12,0,8"/>
+                                        <TextBlock Text="Adapter to Router" Style="{StaticResource SecondaryText}"/>
+                                        <Border Height="4" Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="0,16,0,0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Health Score Card -->
+                                <Border Grid.Column="2" Style="{StaticResource MetricCard}" Margin="0,0,16,0">
+                                    <StackPanel>
+                                        <TextBlock Text="HEALTH SCORE" Style="{StaticResource CaptionText}"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,12,0,8">
+                                            <TextBlock x:Name="HealthScoreText" Text="--" Style="{StaticResource HeroText}"/>
+                                            <TextBlock Text="/100" Style="{StaticResource H2Text}" Foreground="{StaticResource TextTertiaryBrush}" Margin="4,8,0,0"/>
+                                        </StackPanel>
+                                        <TextBlock x:Name="HealthStatusText" Text="--" Style="{StaticResource SecondaryText}"/>
+                                        <Border Height="4" CornerRadius="2" Margin="0,16,0,0">
+                                            <Border.Background>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                    <GradientStop Color="#10B981" Offset="0"/>
+                                                    <GradientStop Color="#6366F1" Offset="1"/>
+                                                </LinearGradientBrush>
+                                            </Border.Background>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Internet Speed Card -->
+                                <Border Grid.Column="3" Style="{StaticResource MetricCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="INTERNET SPEED" Style="{StaticResource CaptionText}"/>
+                                        <TextBlock x:Name="InternetSpeedText" Text="--" Style="{StaticResource HeroText}" Margin="0,12,0,8"/>
+                                        <TextBlock x:Name="InternetSpeedSubtitle" Text="Run Speed Test" Style="{StaticResource SecondaryText}"/>
+                                        <Border Height="4" Background="{StaticResource AccentBrush}" CornerRadius="2" Margin="0,16,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <!-- Network Details & Alerts -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1.5*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Network Details Card -->
+                                <Border Grid.Column="0" Style="{StaticResource ModernCard}" Margin="0,0,16,0">
+                                    <StackPanel>
+                                        <TextBlock Text="NETWORK DETAILS" Style="{StaticResource CaptionText}" Margin="0,0,0,20"/>
+
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <!-- SSID -->
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Network:" Style="{StaticResource SecondaryText}" FontWeight="Medium" Margin="0,0,20,12"/>
+                                            <TextBlock Grid.Row="0" Grid.Column="1" x:Name="SsidText" Text="--" Style="{StaticResource BodyText}" Margin="0,0,0,12"/>
+
+                                            <!-- Band -->
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Band:" Style="{StaticResource SecondaryText}" FontWeight="Medium" Margin="0,0,20,12"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="BandText" Text="--" Style="{StaticResource BodyText}" Margin="0,0,0,12"/>
+
+                                            <!-- Channel -->
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Channel:" Style="{StaticResource SecondaryText}" FontWeight="Medium" Margin="0,0,20,12"/>
+                                            <TextBlock Grid.Row="2" Grid.Column="1" x:Name="ChannelText" Text="--" Style="{StaticResource BodyText}" Margin="0,0,0,12"/>
+
+                                            <!-- Radio Type -->
+                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Radio Type:" Style="{StaticResource SecondaryText}" FontWeight="Medium" Margin="0,0,20,12"/>
+                                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="RadioTypeText" Text="--" Style="{StaticResource BodyText}" Margin="0,0,0,12"/>
+
+                                            <!-- Security -->
+                                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Security:" Style="{StaticResource SecondaryText}" FontWeight="Medium" Margin="0,0,20,12"/>
+                                            <TextBlock Grid.Row="4" Grid.Column="1" x:Name="AuthText" Text="--" Style="{StaticResource BodyText}" Margin="0,0,0,12"/>
+
+                                            <!-- RSSI -->
+                                            <TextBlock Grid.Row="5" Grid.Column="0" Text="RSSI:" Style="{StaticResource SecondaryText}" FontWeight="Medium" Margin="0,0,20,0"/>
+                                            <TextBlock Grid.Row="5" Grid.Column="1" x:Name="RssiText" Text="--" Style="{StaticResource BodyText}"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Recent Alerts Card -->
+                                <Border Grid.Column="1" Style="{StaticResource ModernCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="RECENT ALERTS" Style="{StaticResource CaptionText}" Margin="0,0,0,16"/>
+                                        <ListBox x:Name="AlertsListBox" BorderThickness="0" Background="Transparent" MaxHeight="300" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="{StaticResource SurfaceHoverBrush}" CornerRadius="8" Padding="12" Margin="0,4">
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12"/>
+                                                            <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                        <TextBlock x:Name="NoAlertsText" Text="No alerts" Style="{StaticResource SecondaryText}" TextAlignment="Center" Margin="0,20" Visibility="Collapsed"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- ANALYTICS PAGE -->
+                    <ScrollViewer x:Name="AnalyticsPage" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                        <StackPanel Margin="24,20,24,24">
+
+                            <!-- Analytics Summary Header -->
+                            <Grid Margin="0,0,0,24">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Average Speed Stat -->
+                                <Border Grid.Column="0" Style="{StaticResource MetricCard}" Margin="0,0,12,0">
+                                    <StackPanel>
+                                        <TextBlock Text="AVG SPEED" Style="{StaticResource CaptionText}"/>
+                                        <TextBlock x:Name="AnalyticsAvgSpeed" Text="--" Style="{StaticResource HeroText}"
+                                                 FontSize="28" Margin="0,8,0,4"/>
+                                        <TextBlock Text="Download Speed" Style="{StaticResource SecondaryText}"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Total Tests Stat -->
+                                <Border Grid.Column="1" Style="{StaticResource MetricCard}" Margin="0,0,12,0">
+                                    <StackPanel>
+                                        <TextBlock Text="SPEED TESTS" Style="{StaticResource CaptionText}"/>
+                                        <TextBlock x:Name="AnalyticsTotalTests" Text="--" Style="{StaticResource HeroText}"
+                                                 FontSize="28" Margin="0,8,0,4"/>
+                                        <TextBlock Text="Tests Completed" Style="{StaticResource SecondaryText}"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Stability Score Stat -->
+                                <Border Grid.Column="2" Style="{StaticResource MetricCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="STABILITY" Style="{StaticResource CaptionText}"/>
+                                        <TextBlock x:Name="AnalyticsStabilityScore" Text="--" Style="{StaticResource HeroText}"
+                                                 FontSize="28" Margin="0,8,0,4"/>
+                                        <TextBlock Text="24 Hour Average" Style="{StaticResource SecondaryText}"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <!-- ISP Performance Card -->
+                            <Border Style="{StaticResource ModernCard}" Margin="0,0,0,20">
+                                <StackPanel>
+                                    <!-- Header with Icon -->
+                                    <Grid Margin="0,0,0,20">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0" Width="48" Height="48" Background="{StaticResource PrimaryLightBrush}"
+                                                CornerRadius="10" Margin="0,0,16,0">
+                                            <TextBlock Text="🌐" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="ISP PERFORMANCE ANALYSIS" Style="{StaticResource H3Text}"/>
+                                            <TextBlock Text="Internet Service Provider quality metrics"
+                                                     Style="{StaticResource SecondaryText}" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- ISP Stats Grid -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Left Column -->
+                                        <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                            <TextBlock Text="Performance Metrics" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+                                            <StackPanel Margin="0,0,0,12">
+                                                <TextBlock Text="Average Download" Style="{StaticResource SecondaryText}" FontSize="11"/>
+                                                <TextBlock x:Name="IspAvgDownload" Text="-- Mbps" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                            </StackPanel>
+
+                                            <StackPanel Margin="0,0,0,12">
+                                                <TextBlock Text="Average Upload" Style="{StaticResource SecondaryText}" FontSize="11"/>
+                                                <TextBlock x:Name="IspAvgUpload" Text="-- Mbps" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                            </StackPanel>
+
+                                            <StackPanel>
+                                                <TextBlock Text="Average Latency" Style="{StaticResource SecondaryText}" FontSize="11"/>
+                                                <TextBlock x:Name="IspAvgLatency" Text="-- ms" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!-- Right Column -->
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="Quality Analysis" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+                                            <StackPanel Margin="0,0,0,12">
+                                                <TextBlock Text="Speed Degradation" Style="{StaticResource SecondaryText}" FontSize="11"/>
+                                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                    <TextBlock x:Name="IspDegradation" Text="--%" FontSize="18" FontWeight="SemiBold"/>
+                                                    <Border x:Name="IspDegradationBadge" Background="{StaticResource AccentBrush}"
+                                                            CornerRadius="4" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="GOOD" Foreground="White" FontSize="10" FontWeight="SemiBold"/>
+                                                    </Border>
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <StackPanel>
+                                                <TextBlock Text="Throttling Detected" Style="{StaticResource SecondaryText}" FontSize="11"/>
+                                                <TextBlock x:Name="IspThrottling" Text="--" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Recommendation Box -->
+                                    <Border Background="{StaticResource SurfaceHoverBrush}" CornerRadius="8" Padding="16" Margin="0,20,0,0">
+                                        <StackPanel>
+                                            <TextBlock Text="💡 Recommendation" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                            <TextBlock x:Name="IspRecommendation" Text="Collecting data..."
+                                                     Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Best Download Times Card -->
+                            <Border Style="{StaticResource ModernCard}" Margin="0,0,0,20">
+                                <StackPanel>
+                                    <!-- Header with Icon -->
+                                    <Grid Margin="0,0,0,20">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0" Width="48" Height="48" Background="{StaticResource AccentBrush}"
+                                                CornerRadius="10" Margin="0,0,16,0" Opacity="0.2">
+                                            <TextBlock Text="⏰" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="BEST DOWNLOAD TIMES" Style="{StaticResource H3Text}"/>
+                                            <TextBlock Text="Optimal hours for fastest speeds"
+                                                     Style="{StaticResource SecondaryText}" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Time Analysis Grid -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Best Hours -->
+                                        <Border Grid.Column="0" Background="{StaticResource SurfaceHoverBrush}"
+                                                CornerRadius="12" Padding="20" Margin="0,0,12,0">
+                                            <StackPanel>
+                                                <TextBlock Text="⚡ FASTEST TIMES" FontWeight="SemiBold"
+                                                         Foreground="{StaticResource AccentBrush}" Margin="0,0,0,12"/>
+                                                <TextBlock x:Name="BestHoursText" Text="--" FontSize="16" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Worst Hours -->
+                                        <Border Grid.Column="1" Background="{StaticResource SurfaceHoverBrush}"
+                                                CornerRadius="12" Padding="20">
+                                            <StackPanel>
+                                                <TextBlock Text="🐌 SLOWEST TIMES" FontWeight="SemiBold"
+                                                         Foreground="{StaticResource WarningBrush}" Margin="0,0,0,12"/>
+                                                <TextBlock x:Name="WorstHoursText" Text="--" FontSize="16" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- Recommendation -->
+                                    <Border Background="{StaticResource SurfaceHoverBrush}" CornerRadius="8" Padding="16" Margin="0,16,0,0">
+                                        <StackPanel>
+                                            <TextBlock Text="💡 Recommendation" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                            <TextBlock x:Name="TimesRecommendation" Text="Collecting data..."
+                                                     Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Network Stability Card -->
+                            <Border Style="{StaticResource ModernCard}">
+                                <StackPanel>
+                                    <!-- Header with Icon -->
+                                    <Grid Margin="0,0,0,20">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0" Width="48" Height="48" Background="{StaticResource PrimaryBrush}"
+                                                CornerRadius="10" Margin="0,0,16,0" Opacity="0.2">
+                                            <TextBlock Text="📊" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="NETWORK STABILITY (24H)" Style="{StaticResource H3Text}"/>
+                                            <TextBlock Text="Connection consistency and reliability metrics"
+                                                     Style="{StaticResource SecondaryText}" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Stability Metrics Grid -->
+                                    <Grid Margin="0,0,0,16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Average Signal -->
+                                        <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                            <TextBlock Text="Average Signal" Style="{StaticResource SecondaryText}" FontSize="11"/>
+                                            <TextBlock x:Name="StabilityAvgSignal" Text="--%"  FontSize="24" FontWeight="Bold" Margin="0,8,0,0"/>
+                                        </StackPanel>
+
+                                        <!-- Average Speed -->
+                                        <StackPanel Grid.Column="1" Margin="0,0,16,0">
+                                            <TextBlock Text="Average Speed" Style="{StaticResource SecondaryText}" FontSize="11"/>
+                                            <TextBlock x:Name="StabilityAvgSpeed" Text="-- Mbps" FontSize="24" FontWeight="Bold" Margin="0,8,0,0"/>
+                                        </StackPanel>
+
+                                        <!-- Drops -->
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Significant Drops" Style="{StaticResource SecondaryText}" FontSize="11"/>
+                                            <TextBlock x:Name="StabilityDrops" Text="--" FontSize="24" FontWeight="Bold" Margin="0,8,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Stability Progress Bars -->
+                                    <StackPanel Margin="0,0,0,16">
+                                        <TextBlock Text="Stability Scores" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+                                        <!-- Signal Stability -->
+                                        <Grid Margin="0,0,0,12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="140"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="50"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Grid.Column="0" Text="Signal Stability" Style="{StaticResource SecondaryText}" VerticalAlignment="Center"/>
+                                            <Border Grid.Column="1" Background="{StaticResource SurfaceHoverBrush}" Height="8" CornerRadius="4" Margin="8,0">
+                                                <Border x:Name="SignalStabilityBar" Background="{StaticResource AccentBrush}"
+                                                        HorizontalAlignment="Left" Width="0" Height="8" CornerRadius="4"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="2" x:Name="SignalStabilityValue" Text="--" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                        </Grid>
+
+                                        <!-- Speed Stability -->
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="140"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="50"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Grid.Column="0" Text="Speed Stability" Style="{StaticResource SecondaryText}" VerticalAlignment="Center"/>
+                                            <Border Grid.Column="1" Background="{StaticResource SurfaceHoverBrush}" Height="8" CornerRadius="4" Margin="8,0">
+                                                <Border x:Name="SpeedStabilityBar" Background="{StaticResource PrimaryBrush}"
+                                                        HorizontalAlignment="Left" Width="0" Height="8" CornerRadius="4"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="2" x:Name="SpeedStabilityValue" Text="--" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <!-- Overall Status -->
+                                    <Border x:Name="StabilityStatusBorder" Background="{StaticResource AccentBrush}"
+                                            CornerRadius="8" Padding="16">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock x:Name="StabilityStatusIcon" Text="✓" FontSize="24" Foreground="White" Margin="0,0,12,0"/>
+                                            <StackPanel>
+                                                <TextBlock Text="Network Status" Foreground="White" FontWeight="SemiBold"/>
+                                                <TextBlock x:Name="StabilityStatusText" Text="Network is stable"
+                                                         Foreground="White" Opacity="0.9" Margin="0,4,0,0"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- DEVICES PAGE -->
+                    <ScrollViewer x:Name="DevicesPage" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                        <StackPanel Margin="24,20,24,24">
+
+                            <!-- Network Context Card -->
+                            <Border Style="{StaticResource ModernCard}" Margin="0,0,0,20">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Network Icon -->
+                                    <Border Grid.Column="0" Width="64" Height="64" Background="{StaticResource PrimaryBrush}"
+                                            CornerRadius="12" Margin="0,0,20,0">
+                                        <TextBlock Text="📡" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+
+                                    <!-- Network Info -->
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="SCANNING NETWORK" Style="{StaticResource CaptionText}"/>
+                                        <TextBlock x:Name="CurrentNetworkName" Text="--" FontSize="20" FontWeight="SemiBold"
+                                                 Foreground="{StaticResource TextPrimaryBrush}" Margin="0,4,0,4"/>
+                                        <TextBlock x:Name="NetworkExplanation"
+                                                 Text="Showing all devices connected to the same WiFi network as this computer"
+                                                 Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+
+                                    <!-- Stats -->
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                        <TextBlock x:Name="DeviceCountBadge" Text="0" FontSize="36" FontWeight="Bold"
+                                                 Foreground="{StaticResource PrimaryBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="DEVICES" Style="{StaticResource CaptionText}" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Action Bar -->
+                            <Border Style="{StaticResource ModernCard}" Margin="0,0,0,20" Padding="20">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="Device Discovery" FontWeight="SemiBold" FontSize="14"/>
+                                        <TextBlock x:Name="LastScanText" Text="Click scan to find devices on your network"
+                                                 Style="{StaticResource SecondaryText}" Margin="0,4,0,0"/>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1" Content="🔍  Scan Network"
+                                            Style="{StaticResource ModernButton}"
+                                            Click="ScanDevices_Click"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Devices List -->
+                            <Border Style="{StaticResource ModernCard}">
+                                <StackPanel>
+                                    <TextBlock Text="DISCOVERED DEVICES" Style="{StaticResource H3Text}" Margin="0,0,0,16"/>
+
+                                    <!-- Empty State -->
+                                    <Border x:Name="NoDevicesPanel" Padding="40" Visibility="Visible">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="📱" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                                            <TextBlock Text="No devices found yet" FontSize="18" FontWeight="SemiBold"
+                                                     HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                            <TextBlock Text="Click 'Scan Network' above to discover devices on your WiFi network"
+                                                     Style="{StaticResource SecondaryText}" HorizontalAlignment="Center" TextWrapping="Wrap"
+                                                     MaxWidth="400" TextAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Devices List -->
+                                    <ListBox x:Name="DevicesListBox" BorderThickness="0" Background="Transparent">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{StaticResource SurfaceHoverBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,12">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <!-- Device Icon -->
+                                                        <Border Grid.Column="0" Width="56" Height="56"
+                                                                Background="{StaticResource PrimaryLightBrush}"
+                                                                CornerRadius="12" Margin="0,0,20,0">
+                                                            <TextBlock Text="💻" FontSize="28"
+                                                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+
+                                                        <!-- Device Info -->
+                                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="16"/>
+                                                            <Grid Margin="0,6,0,0">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,16,0">
+                                                                    <TextBlock Text="🌐 " FontSize="12"/>
+                                                                    <TextBlock Text="{Binding IpAddress}" FontSize="12"
+                                                                             Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                                </StackPanel>
+
+                                                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                                    <TextBlock Text="🏷️ " FontSize="12"/>
+                                                                    <TextBlock Text="{Binding Vendor}" FontSize="12"
+                                                                             Foreground="{StaticResource TextTertiaryBrush}"/>
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </StackPanel>
+
+                                                        <!-- Device Type Badge -->
+                                                        <Border Grid.Column="2" Background="{StaticResource AccentBrush}"
+                                                                CornerRadius="8" Padding="12,6" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Type}" Foreground="White"
+                                                                     FontSize="11" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </StackPanel>
+                            </Border>
+
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- PREDICTIONS PAGE -->
+                    <ScrollViewer x:Name="PredictionsPage" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                        <StackPanel Margin="24,20,24,24">
+
+                            <!-- Active Predictions Card -->
+                            <Border x:Name="ActivePredictionsCard" Style="{StaticResource ModernCard}" Margin="0,0,0,20">
+                                <StackPanel>
+                                    <TextBlock Text="AI-POWERED PREDICTIONS" Style="{StaticResource H3Text}" Margin="0,0,0,20"/>
+
+                                    <ListBox x:Name="PredictionsListBox" BorderThickness="0" Background="Transparent" MaxHeight="600">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{StaticResource SurfaceHoverBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,12">
+                                                    <StackPanel>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                                            <TextBlock Text="{Binding Title}" Style="{StaticResource H3Text}"/>
+                                                            <Border Background="{StaticResource PrimaryLightBrush}" CornerRadius="4" Padding="8,4" Margin="12,0,0,0" VerticalAlignment="Center">
+                                                                <StackPanel Orientation="Horizontal">
+                                                                    <TextBlock Text="Confidence: " Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                                                    <TextBlock Text="{Binding Confidence}" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                                                    <TextBlock Text="%" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                                                </StackPanel>
+                                                            </Border>
+                                                        </StackPanel>
+                                                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Style="{StaticResource BodyText}" Margin="0,0,0,8"/>
+                                                        <TextBlock Text="{Binding EstimatedTimeframe}" Style="{StaticResource SecondaryText}" FontStyle="Italic"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Empty State / System Status Card -->
+                            <Border x:Name="PredictionsEmptyState" Style="{StaticResource ModernCard}" Visibility="Collapsed">
+                                <StackPanel>
+                                    <!-- Header -->
+                                    <Grid Margin="0,0,0,24">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0" Width="56" Height="56" Background="{StaticResource PrimaryLightBrush}"
+                                                CornerRadius="12" Margin="0,0,16,0">
+                                            <TextBlock Text="🔮" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="AI PREDICTION ENGINE" Style="{StaticResource H3Text}"/>
+                                            <TextBlock Text="Learning your network patterns to forecast issues"
+                                                     Style="{StaticResource SecondaryText}" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- System Status -->
+                                    <Border Background="{StaticResource SurfaceHoverBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,20">
+                                        <StackPanel>
+                                            <TextBlock Text="SYSTEM STATUS" FontWeight="SemiBold" FontSize="11"
+                                                     Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,12"/>
+
+                                            <!-- Engine Status -->
+                                            <Grid Margin="0,0,0,16">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="140"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="Current Engine:" Style="{StaticResource SecondaryText}"/>
+                                                <TextBlock Grid.Column="1" x:Name="PredictionEngineText" Text="Initializing..." FontWeight="SemiBold"/>
+                                            </Grid>
+
+                                            <!-- Data Collection Progress -->
+                                            <Grid Margin="0,0,0,16">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="140"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="Data Collected:" Style="{StaticResource SecondaryText}"/>
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock x:Name="DataPointsText" Text="0 / 100 data points" FontWeight="SemiBold"/>
+                                                    <Border Background="{StaticResource SurfaceHoverBrush}" Height="6" CornerRadius="3" Margin="0,8,0,0">
+                                                        <Border x:Name="DataProgressBar" Background="{StaticResource PrimaryBrush}"
+                                                                HorizontalAlignment="Left" Width="0" Height="6" CornerRadius="3"/>
+                                                    </Border>
+                                                </StackPanel>
+                                            </Grid>
+
+                                            <!-- Expected Accuracy -->
+                                            <Grid Margin="0,0,0,16">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="140"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="Expected Accuracy:" Style="{StaticResource SecondaryText}"/>
+                                                <TextBlock Grid.Column="1" x:Name="AccuracyText" Text="--" FontWeight="SemiBold"/>
+                                            </Grid>
+
+                                            <!-- Time to Predictions -->
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="140"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="Predictions Available:" Style="{StaticResource SecondaryText}"/>
+                                                <TextBlock Grid.Column="1" x:Name="TimeToPredicationsText" Text="Collecting data..." FontWeight="SemiBold"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- What Predictions Will Show -->
+                                    <Border Background="{StaticResource SurfaceHoverBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,20">
+                                        <StackPanel>
+                                            <TextBlock Text="💡 WHAT YOU'LL GET" FontWeight="SemiBold" Margin="0,0,0,16"/>
+
+                                            <StackPanel Margin="0,0,0,12">
+                                                <TextBlock Text="📉 Signal Degradation Forecasts" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                                <TextBlock Text="Get warned before your WiFi signal drops, with time to take action"
+                                                         Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
+                                            </StackPanel>
+
+                                            <StackPanel Margin="0,0,0,12">
+                                                <TextBlock Text="🚀 Speed Pattern Analysis" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                                <TextBlock Text="Learn when your network will slow down based on historical patterns"
+                                                         Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
+                                            </StackPanel>
+
+                                            <StackPanel>
+                                                <TextBlock Text="🕐 Congestion Predictions" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                                <TextBlock Text="Know the best times for downloads and when to avoid heavy usage"
+                                                         Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- How It Works -->
+                                    <Border Background="#F0F9FF" CornerRadius="12" Padding="20" BorderBrush="{StaticResource PrimaryBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <TextBlock Text="🤖 HOW IT WORKS" FontWeight="SemiBold" Margin="0,0,0,12"
+                                                     Foreground="{StaticResource TextPrimaryBrush}"/>
+                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource SecondaryText}" Margin="0,0,0,8">
+                                                <Run Text="Our hybrid AI engine starts with statistical analysis and automatically upgrades to ML.NET machine learning after collecting 500 data points."/>
+                                            </TextBlock>
+                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource SecondaryText}">
+                                                <Run Text="First predictions appear after ~1 hour of monitoring. Accuracy improves as more data is collected. The system runs every 5 minutes to generate fresh forecasts."/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                </Grid>
+
+                <!-- Progress Bar -->
+                <ProgressBar Grid.Row="1" x:Name="ProgressBar" Height="3" VerticalAlignment="Bottom"
+                             IsIndeterminate="True" Foreground="{StaticResource PrimaryBrush}"
+                             Background="Transparent" BorderThickness="0" Visibility="Collapsed"/>
+            </Grid>
+
+        <!-- Speed Test Overlay -->
+        <controls:SpeedTestControl x:Name="SpeedTestOverlayControl" Grid.ColumnSpan="2"/>
+
+    </Grid>
+
+</Window>

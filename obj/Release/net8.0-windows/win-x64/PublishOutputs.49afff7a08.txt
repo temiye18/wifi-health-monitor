@@ -1,0 +1,2 @@
+C:\Users\xps\Documents\Projects\YEAR_2025\VIBE_CODE\WiFiHealthMonitor\bin\Release\net8.0-windows\win-x64\publish\WiFiHealthMonitor.pdb
+C:\Users\xps\Documents\Projects\YEAR_2025\VIBE_CODE\WiFiHealthMonitor\bin\Release\net8.0-windows\win-x64\publish\WiFiHealthMonitor.exe

@@ -1,0 +1,188 @@
+﻿using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Windows;
+using System.Windows.Media;
+using WiFiHealthMonitor.Models;
+using WiFiHealthMonitor.Services;
+
+namespace WiFiHealthMonitor;
+
+/// <summary>
+/// Interaction logic for MainWindow.xaml
+/// </summary>
+public partial class MainWindow : Window
+{
+    private readonly MonitoringService _monitoringService;
+    private ObservableCollection<Alert> _alerts;
+
+    public MainWindow()
+    {
+        InitializeComponent();
+        _monitoringService = new MonitoringService();
+        _alerts = new ObservableCollection<Alert>();
+        AlertsListBox.ItemsSource = _alerts;
+
+        Loaded += MainWindow_Loaded;
+        Closing += MainWindow_Closing;
+    }
+
+    private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            StatusText.Text = "Initializing...";
+            ProgressBar.Visibility = Visibility.Visible;
+
+            // Initialize services
+            await _monitoringService.InitializeAsync();
+
+            // Subscribe to events
+            _monitoringService.MetricsUpdated += OnMetricsUpdated;
+            _monitoringService.AlertGenerated += OnAlertGenerated;
+            _monitoringService.SpeedTestCompleted += OnSpeedTestCompleted;
+
+            // Start monitoring
+            _monitoringService.StartMonitoring(30); // Every 30 seconds
+
+            StatusText.Text = "Monitoring active";
+            ProgressBar.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error initializing: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            StatusText.Text = "Error - Click Refresh to retry";
+            ProgressBar.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        _monitoringService.StopMonitoring();
+    }
+
+    private void OnMetricsUpdated(object? sender, NetworkMetrics metrics)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            UpdateUI(metrics);
+        });
+    }
+
+    private void OnAlertGenerated(object? sender, Alert alert)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            _alerts.Insert(0, alert);
+            if (_alerts.Count > 10)
+            {
+                _alerts.RemoveAt(_alerts.Count - 1);
+            }
+            NoAlertsText.Visibility = _alerts.Any() ? Visibility.Collapsed : Visibility.Visible;
+        });
+    }
+
+    private void OnSpeedTestCompleted(object? sender, SpeedTestResult result)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            MessageBox.Show(
+                $"Speed Test Complete!\n\n" +
+                $"Download: {result.DownloadMbps:F2} Mbps\n" +
+                $"Upload: {result.UploadMbps:F2} Mbps\n" +
+                $"Latency: {result.LatencyMs:F1} ms\n" +
+                $"ISP: {result.Isp}",
+                "Speed Test Results",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information
+            );
+            RunSpeedTestButton.IsEnabled = true;
+            StatusText.Text = "Monitoring active";
+            ProgressBar.Visibility = Visibility.Collapsed;
+        });
+    }
+
+    private void UpdateUI(NetworkMetrics metrics)
+    {
+        // Update main stats
+        SignalText.Text = $"{metrics.SignalPercent}%";
+        SignalStatusText.Text = $"({metrics.Rssi} dBm)";
+
+        DownloadSpeedText.Text = $"{metrics.ReceiveSpeedMbps:F1}";
+        UploadSpeedText.Text = $"{metrics.TransmitSpeedMbps:F1} Mbps";
+
+        HealthScoreText.Text = $"{metrics.HealthScore}/100";
+        HealthStatusText.Text = metrics.HealthStatus;
+
+        // Color code health score
+        if (metrics.HealthScore >= 80)
+            HealthScoreText.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4CAF50")!);
+        else if (metrics.HealthScore >= 60)
+            HealthScoreText.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFC107")!);
+        else
+            HealthScoreText.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F44336")!);
+
+        // Update details
+        SsidText.Text = metrics.Ssid;
+        BandText.Text = $"{metrics.Band} (Channel {metrics.Channel})";
+        ChannelText.Text = metrics.Channel.ToString();
+        RadioTypeText.Text = metrics.RadioType;
+        AuthText.Text = metrics.Authentication;
+        RssiText.Text = $"{metrics.Rssi} dBm";
+
+        LastUpdateText.Text = $"Last updated: {DateTime.Now:HH:mm:ss}";
+    }
+
+    private async void RefreshButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            StatusText.Text = "Refreshing...";
+            ProgressBar.Visibility = Visibility.Visible;
+
+            var metrics = await _monitoringService.CollectMetricsAsync();
+            if (metrics != null)
+            {
+                UpdateUI(metrics);
+            }
+
+            StatusText.Text = "Monitoring active";
+            ProgressBar.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error refreshing: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            StatusText.Text = "Error";
+            ProgressBar.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private async void RunSpeedTestButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            RunSpeedTestButton.IsEnabled = false;
+            StatusText.Text = "Running speed test... This may take a minute.";
+            ProgressBar.Visibility = Visibility.Visible;
+
+            await _monitoringService.RunSpeedTestAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error running speed test: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            RunSpeedTestButton.IsEnabled = true;
+            StatusText.Text = "Error";
+            ProgressBar.Visibility = Visibility.Collapsed;
+        }
+    }
+}
+
+// Extension methods for MonitoringService (to make it accessible from UI)
+public static class MonitoringServiceExtensions
+{
+    public static async System.Threading.Tasks.Task<NetworkMetrics?> CollectMetricsAsync(this MonitoringService service)
+    {
+        var wifiMonitor = new WiFiMonitorService();
+        return await wifiMonitor.CollectMetricsAsync();
+    }
+}

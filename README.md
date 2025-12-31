@@ -81,7 +81,7 @@ A Windows desktop application that monitors your WiFi network health in real-tim
 │  RSSI: -39 dBm       │                                   │
 └──────────────────────┴──────────────────────────────────┘
 ```
-![alt text](<Screenshot 2025-12-31 021624.png>)
+![overview](./Assets/overview.png)
 
 ### Analytics Page ⭐ NEW
 ```
@@ -107,8 +107,8 @@ A Windows desktop application that monitors your WiFi network health in real-tim
 │  Significant Drops: 1                                   │
 └─────────────────────────────────────────────────────────┘
 ```
-![alt text](<Screenshot 2025-12-31 021806.png>)
-![alt text](<Screenshot 2025-12-31 021839.png>)
+![analytics](./Assets/analytics1.png)
+![analytics](./Assets/analytics2.png)
 
 
 ### Predictions Page ⭐ NEW
@@ -137,8 +137,8 @@ A Windows desktop application that monitors your WiFi network health in real-tim
 └─────────────────────────────────────────────────────────┘
 ```
 
-![alt text](<Screenshot 2025-12-31 021925.png>)
-![alt text](<Screenshot 2025-12-31 021940.png>)
+![predictions](./Assets/prediction_1.png)
+![predictions](./Assets/prediction_2.png)
 
 ## Requirements
 
